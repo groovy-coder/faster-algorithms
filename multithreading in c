@@ -1,0 +1,78 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+#define MAX 100
+
+int A[MAX][MAX], B[MAX][MAX], C[MAX][MAX];
+int n;  // Matrix size
+
+// Structure to pass multiple arguments to thread
+typedef struct {
+    int row;
+} ThreadArg;
+
+void* multiplyRow(void* arg) {
+    ThreadArg* data = (ThreadArg*)arg;
+    int i = data->row;
+
+    for (int j = 0; j < n; j++) {
+        C[i][j] = 0;
+        for (int k = 0; k < n; k++) {
+            C[i][j] += A[i][k] * B[k][j];
+        }
+    }
+
+    free(data);
+    pthread_exit(NULL);
+}
+
+void printMatrix(int mat[MAX][MAX]) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            printf("%4d ", mat[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+int main() {
+    printf("Enter matrix size (n x n): ");
+    scanf("%d", &n);
+
+    if (n > MAX) {
+        printf("Matrix size too large!\n");
+        return 1;
+    }
+
+    // Initialize matrices A and B
+    printf("Enter elements of Matrix A (%d x %d):\n", n, n);
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            scanf("%d", &A[i][j]);
+
+    printf("Enter elements of Matrix B (%d x %d):\n", n, n);
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            scanf("%d", &B[i][j]);
+
+    pthread_t threads[MAX];
+
+    // initialises one threads for each row
+    for (int i = 0; i < n; i++) {
+        ThreadArg* arg = malloc(sizeof(ThreadArg));
+        arg->row = i;
+        pthread_create(&threads[i], NULL, multiplyRow, arg);
+    }
+
+    // waits for all the threads to finish
+    for (int i = 0; i < n; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    // displays the resultant matrix 
+    printf("\nResult Matrix C (A * B):\n");
+    printMatrix(C);
+
+    return 0;
+}
